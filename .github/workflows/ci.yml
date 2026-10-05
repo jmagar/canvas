@@ -1,0 +1,17 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: '29.0.5'
+          elixir-version: '1.20.3'
+      - run: mix local.hex --force && mix local.rebar --force
+      - run: mix deps.get
+      - run: mix precommit
+      - run: mix assets.setup && mix assets.build

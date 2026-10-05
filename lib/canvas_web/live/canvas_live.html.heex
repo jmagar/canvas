@@ -1,0 +1,566 @@
+<Layouts.app flash={@flash}>
+  <div class="workspace">
+    <aside class="rail">
+      <a class="brand" href="/" aria-label="Canvas home"><span class="brand-mark">c</span><span>canvas<span class="brand-dot">.</span></span></a>
+      <div class="workspace-switch">
+        <span class="workspace-avatar">W</span><div>
+          <strong>My workspace</strong><small>Local, private context</small>
+        </div><.icon name="hero-chevron-down" class="size-4" />
+      </div>
+      <div class="rail-section">Workspace</div>
+      <button class="nav-item current" phx-click="filter" phx-value-kind="all"><.icon
+        name="hero-square-3-stack-3d"
+        class="size-5"
+      />The canvas <span class="count">{length(@board.nodes)}</span></button>
+      <button class="nav-item" phx-click="filter" phx-value-kind="agent"><.icon
+        name="hero-cpu-chip"
+        class="size-5"
+      />Agents <span class="count">{@active_count}</span></button>
+      <button class="nav-item" phx-click="modal" phx-value-name="integrations"><.icon
+        name="hero-circle-stack"
+        class="size-5"
+      />Connections</button>
+      <div class="rail-section project-heading">
+        On this canvas
+        <button phx-click="modal" phx-value-name="create" aria-label="Add canvas item"><.icon
+          name="hero-plus"
+          class="size-4"
+        /></button>
+      </div>
+      <div class="project-list">
+        <button
+          :for={node <- @board.nodes}
+          id={"project-#{node["id"]}"}
+          class={["project-item", @selected_id == node["id"] && "selected"]}
+          phx-click="select"
+          phx-value-id={node["id"]}
+        >
+          <span class={"kind-marker #{node["kind"]}"}></span><span>{node["title"]}</span><span
+            :if={node["status"] in ~w(running starting)}
+            class="live-dot"
+          ></span>
+        </button>
+      </div>
+      <div class="rail-bottom">
+        <div class="local-note">
+          <.icon name="hero-lock-closed" class="size-4" /><span>Your context stays here.<small>Only sent when you ask Codex.</small></span>
+        </div>
+        <button class="profile" phx-click="modal" phx-value-name="about"><span class="profile-avatar">You</span><div>
+          <strong>Personal workspace</strong><small>Canvas preview</small>
+        </div><.icon name="hero-ellipsis-horizontal" class="size-5" /></button>
+      </div>
+    </aside>
+    <div class="main-workspace">
+      <header class="topbar">
+        <div class="breadcrumb">
+          Workspace <.icon name="hero-chevron-right" class="size-3" /><strong>The canvas</strong>
+        </div><div class="topbar-actions">
+          <span class="local-badge"><span></span> Saved locally</span><button
+            class="primary-button"
+            id="new-item"
+            phx-click="modal"
+            phx-value-name="create"
+          ><.icon name="hero-plus" class="size-4" />New item</button>
+        </div>
+      </header>
+      <div class="canvas-and-inspector">
+        <section class="canvas-area">
+          <div class="canvas-heading">
+            <div>
+              <h1>Room to think.<br /><span>Space to build.</span></h1><p>
+                Connect your ideas. Give your agents a place to work.
+              </p>
+            </div><span class="board-version">Canvas / 01</span>
+          </div>
+          <div class="board-toolbar">
+            <div class="filter-group">
+              <button
+                :for={
+                  {label, kind} <- [
+                    {"Everything", "all"},
+                    {"Ideas", "idea"},
+                    {"Tasks", "task"},
+                    {"Agents", "agent"}
+                  ]
+                }
+                class={[@filter == kind && "active"]}
+                phx-click="filter"
+                phx-value-kind={kind}
+              >{label}</button>
+            </div>
+            <.form
+              for={to_form(%{"q" => @query})}
+              id="search-form"
+              phx-change="search"
+              class="search-form"
+            >
+              <.icon name="hero-magnifying-glass" class="size-4" /><.input
+                name="q"
+                value={@query}
+                placeholder="Find an item"
+                aria-label="Find an item"
+                phx-debounce="200"
+                class="search-input"
+              />
+            </.form>
+          </div>
+          <div
+            id="spatial-canvas"
+            class="spatial-canvas"
+            phx-hook="SpatialCanvas"
+            phx-update="ignore"
+            data-graph={@graph_json}
+            aria-label="Project canvas. Drag cards to move, drag background to pan, scroll to zoom."
+          >
+            <div class="graph-plane"></div>
+            <div class="canvas-empty" hidden>No items match. Create an idea to get started.</div>
+            <div class="zoom-controls">
+              <button data-action="out" aria-label="Zoom out">−</button><span class="zoom-value">100%</span><button
+                data-action="in"
+                aria-label="Zoom in"
+              >+</button><span class="zoom-divider"></span><button
+                data-action="fit"
+                aria-label="Fit all items"
+              >⌗</button>
+            </div>
+          </div>
+          <footer class="canvas-footer">
+            <span><span class="status-dot"></span>{@active_count} agents working <span class="footer-divider">/</span>{length(
+              @board.edges
+            )} connections</span><span>Drag to arrange <span class="footer-divider">/</span>Scroll to zoom</span>
+          </footer>
+        </section>
+        <aside :if={@selected} class="inspector" id="inspector">
+          <div class="inspector-heading">
+            <span class={"type-label #{@selected["kind"]}"}><.icon
+              name={kind_icon(@selected["kind"])}
+              class="size-4"
+            />{String.capitalize(@selected["kind"])}</span><div>
+              <button phx-click="modal" phx-value-name="delete" aria-label="Remove item"><.icon
+                name="hero-trash"
+                class="size-4"
+              /></button><button phx-click="close_inspector" aria-label="Close inspector"><.icon
+                name="hero-x-mark"
+                class="size-5"
+              /></button>
+            </div>
+          </div>
+          <h2>{@selected["title"]}</h2>
+          <div class="item-meta">
+            <span class={"state-badge #{@selected["status"]}"}>{@selected["status"]}</span><span>{length(
+              @selected["attachments"]
+            )} sources</span><button phx-click="modal" phx-value-name="connect"><.icon
+              name="hero-link"
+              class="size-3"
+            />Connect</button>
+          </div>
+          <div class="inspector-tabs">
+            <button
+              :for={
+                {label, tab} <- [
+                  {"Context", "context"},
+                  {"Conversation", "conversation"},
+                  {"References", "references"},
+                  {"Activity", "activity"}
+                ]
+              }
+              class={[@tab == tab && "active"]}
+              phx-click="tab"
+              phx-value-tab={tab}
+            >{label}</button>
+          </div>
+          <div :if={@tab == "context"} class="inspector-body context-body">
+            <.form for={@edit_form} id="context-form" phx-change="edit_context" phx-submit="save">
+              <.input field={@edit_form[:title]} label="Name" class="field-input" required />
+              <.input
+                field={@edit_form[:description]}
+                type="textarea"
+                label="What are we trying to accomplish?"
+                placeholder="Describe the outcome, constraints, and what good looks like…"
+                rows="6"
+                class="field-input description-input"
+              />
+              <.input
+                field={@edit_form[:repo]}
+                label="Local repository"
+                placeholder="/absolute/path/to/repository"
+                class="field-input"
+              />
+              <p class="field-help">
+                Codex uses this directory for the conversation. Files remain in their original repository.
+              </p>
+              <button class="save-button" type="submit"><.icon name="hero-check" class="size-4" />Save context</button>
+            </.form>
+            <div :if={@selected["classification"]} class="project-classification">
+              <h3>Decision model</h3><p>
+                {@selected["classification"]["engine"]} · {@selected["classification"]["status"]}
+              </p><span :for={label <- @selected["classification"]["labels"]}>{label}</span><small :if={
+                @selected["classification"]["confidence"]
+              }>Confidence {round(@selected["classification"]["confidence"] * 100)}%{if @selected[
+                                                                                          "classification"
+                                                                                        ][
+                                                                                          "review_required"
+                                                                                        ],
+                                                                                        do:
+                                                                                          " · Needs review"}</small>
+            </div>
+            <div class="sources-heading">
+              <h3>Source material <span>{length(@selected["attachments"])}</span></h3><div>
+                <button phx-click="modal" phx-value-name="link" aria-label="Add link"><.icon
+                  name="hero-link"
+                  class="size-4"
+                /></button><button
+                  phx-click="modal"
+                  phx-value-name="upload"
+                  aria-label="Upload files"
+                ><.icon name="hero-plus" class="size-4" /></button>
+              </div>
+            </div>
+            <div :if={@selected["attachments"] == []} class="source-empty">
+              <.icon name="hero-document-plus" class="size-7" /><strong>Great work starts with context.</strong><p>
+                Drop in specs, screenshots, documents, or the links that explain your idea.
+              </p><button phx-click="modal" phx-value-name="upload">Add files</button>
+            </div>
+            <button
+              class="classification-button"
+              id="classify-sources"
+              phx-click="classify"
+            ><.icon name="hero-tag" class="size-4" />Classify with Jev / clef</button>
+            <div :if={@selected["attachments"] != []} class="pipeline-heading">
+              <span>Ingest · Embed · Classify · Analyze · Connect</span><button phx-click="retry_ingestion">Retry pipeline</button>
+            </div>
+            <div class="sources-list">
+              <div
+                :for={a <- @selected["attachments"]}
+                class="source-row"
+                id={"source-#{a["id"]}"}
+              >
+                <span class="source-icon"><.icon name={attachment_icon(a["kind"])} class="size-5" /></span><div>
+                  <%= if a["url"] do %>
+                    <a href={a["url"]} target="_blank" rel="noopener noreferrer">{a["name"]}</a>
+                  <% else %>
+                    <a href={~p"/attachments/#{@selected_id}/#{a["id"]}"}>{a["name"]}</a>
+                  <% end %>
+                  <small
+                    :if={a["ingestion"]}
+                    class="ingestion-state"
+                    title={a["ingestion"]["reason"]}
+                  >{a["ingestion"]["status"]}</small><small>{a["kind"]}{if a["size"],
+                    do: " · #{round(a["size"] / 1024)} KB"}</small><div
+                    :if={a["classification"]}
+                    class="classification-tags"
+                  >
+                    <%= if a["classification"]["status"] == "classified" do %>
+                      <span
+                        :for={label <- a["classification"]["labels"]}
+                        title={a["classification"]["rationale"]}
+                      >{label}</span>
+                    <% else %>
+                      <span class="pending">{a["classification"]["status"]} classification</span>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="session-section">
+              <h3>Bring the history with you</h3><p>
+                Attach a previous Codex session as source material.
+              </p><button
+                id="load-sessions"
+                class="secondary-button"
+                phx-click="load_sessions"
+                disabled={@sessions_loading}
+              ><.icon name="hero-chat-bubble-left-right" class="size-4" />{if @sessions_loading,
+                do: "Finding sessions…",
+                else: "Browse Codex sessions"}</button>
+              <button
+                :for={s <- @sessions}
+                class="session-row"
+                phx-click="import_session"
+                phx-value-id={s["id"]}
+              ><span>{String.slice(s["preview"] || s["id"], 0, 100)}</span><.icon
+                name="hero-plus"
+                class="size-4"
+              /></button>
+            </div>
+            <button class="open-conversation" phx-click="tab" phx-value-tab="conversation"><span class="codex-mark">✳</span><div>
+              <strong>Think it through with Codex</strong><small>All of this context, one conversation.</small>
+            </div><.icon name="hero-arrow-up-right" class="size-5" /></button>
+          </div>
+          <div :if={@tab == "conversation"} class="conversation-body">
+            <div class="conversation-notice">
+              <.icon name="hero-paper-clip" class="size-4" />Project context is included with every message.
+            </div>
+            <div id="messages" phx-update="stream" class="messages">
+              <div
+                :for={{dom_id, msg} <- @streams.messages}
+                id={dom_id}
+                class={"message #{msg["role"]}"}
+              >
+                <span class="message-author">{if msg["role"] == "assistant",
+                  do: "✳ Codex",
+                  else: String.capitalize(msg["role"])}</span><p>{msg["text"]}</p>
+              </div>
+            </div>
+            <div :if={@selected["messages"] == []} class="conversation-empty">
+              <span>✳</span><h3>A thinking partner<br />for this idea.</h3><p>
+                Ask a question, shape a plan, or send an agent out with a focused task.
+              </p>
+            </div>
+            <div class="composer-wrap">
+              <button
+                :if={@selected["turn_id"]}
+                id="interrupt-turn"
+                class="interrupt-button"
+                phx-click="interrupt"
+              ><.icon name="hero-stop" class="size-4" />Interrupt turn</button>
+              <.form for={@chat_form} id="chat-form" phx-submit="send" class="composer">
+                <.input
+                  field={@chat_form[:text]}
+                  type="textarea"
+                  rows="3"
+                  placeholder={
+                    if @selected["turn_id"],
+                      do: "Steer the active turn…",
+                      else: "What should we work on?"
+                  }
+                  class="composer-input"
+                  required
+                /><div class="composer-footer">
+                  <.input
+                    field={@chat_form[:mode]}
+                    type="select"
+                    options={[{"Chat with Codex", "chat"}, {"Dispatch VM agent", "dispatch"}]}
+                    class="composer-mode"
+                  /><button
+                    type="submit"
+                    aria-label="Send message"
+                    disabled={@selected["status"] == "starting"}
+                  ><.icon name="hero-arrow-up" class="size-5" /></button>
+                </div>
+              </.form>
+              <p class="composer-hint">
+                {if @selected["kind"] == "agent",
+                  do: "Isolated runner required. Tasks remain visible when blocked.",
+                  else: "Local Codex session. Read-only filesystem policy."}
+              </p>
+            </div>
+          </div>
+          <div :if={@tab == "references"} class="inspector-body references-body">
+            <h3>Your context, explained.</h3><p class="field-help">
+              A living source catalog. The VM analyst adds summaries, relevance, and evidence-backed relationships after ingestion.
+            </p>
+            <div :for={a <- @selected["attachments"]} class="reference-entry">
+              <h4>{a["name"]}</h4><p class="reference-location">{a["url"] || a["path"]}</p>
+              <%= if a["reference"] do %>
+                <p>{a["reference"]["summary"]}</p><h5>Why it matters</h5><p>
+                  {a["reference"]["relevance"]}
+                </p><h5>Reference when</h5><p>{a["reference"]["when_to_reference"]}</p><h5>
+                  Limitations
+                </h5><p>{a["reference"]["limitations"]}</p><div
+                  :for={relation <- a["reference"]["related"]}
+                  class="relation-suggestion"
+                >
+                  <p>{relation["reason"]}</p><button
+                    phx-click="accept_relation"
+                    phx-value-from={a["id"]}
+                    phx-value-to={relation["source_id"]}
+                  >Connect sources</button>
+                </div>
+              <% else %>
+                <p class="field-help">Analysis pending. {get_in(a, ["ingestion", "reason"])}</p>
+              <% end %>
+            </div>
+            <details :if={@reference_text != ""} class="reference-document">
+              <summary>View reference document</summary><pre>{@reference_text}</pre>
+            </details>
+            <div class="capability-section">
+              <h3>Useful capabilities</h3><p class="field-help">
+                Search Depot for skills and MCP servers relevant to this project.
+              </p><button
+                class="secondary-button"
+                phx-click="discover_capabilities"
+                id="discover-capabilities"
+              >Search Depot</button><p
+                :if={
+                  @selected["capabilities"] && @selected["capabilities"]["status"] == "blocked"
+                }
+                class="field-help"
+              >
+                {@selected["capabilities"]["reason"]}
+              </p><div
+                :for={cap <- (@selected["capabilities"] || %{})["results"] || []}
+                class="capability-result"
+              >
+                <h4>{cap["name"] || cap["path"] || cap["id"]}</h4><p>{cap["description"]}</p><small>{cap[
+                  "kind"
+                ]} · {cap["namespace"] || cap["path"]}</small>
+              </div><p :if={get_in(@selected, ["capabilities", "incomplete"])} class="field-help">
+                Discovery coverage is incomplete. Some Depot sources were unavailable.
+              </p>
+            </div>
+          </div>
+          <div :if={@tab == "activity"} class="inspector-body">
+            <div class="activity-intro">
+              <.icon name="hero-signal" class="size-5" /><h3>Follow the work</h3><p>
+                Actual app-server events appear here as Codex works.
+              </p>
+            </div><details
+              :for={event <- Enum.reverse(@selected["activity"])}
+              class="activity-row"
+            >
+              <summary>
+                <span class="activity-dot"></span>{String.slice(event["text"], 0, 90)}
+              </summary><pre>{event["text"]}</pre>
+            </details><p :if={@selected["activity"] == []} class="field-help">
+              No agent activity yet. Start a conversation to see events.
+            </p><div class="thread-details">
+              <small>Thread</small><code>{@selected["thread_id"] || "Not started"}</code><small>Turn</small><code>{@selected[
+                "turn_id"
+              ] || "No active turn"}</code>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+  <div :if={@modal} class="modal-backdrop" phx-window-keydown="close_modal" phx-key="Escape">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <button class="modal-close" phx-click="close_modal" aria-label="Close dialog"><.icon
+        name="hero-x-mark"
+        class="size-5"
+      /></button>
+      <%= case @modal do %>
+        <% "create" -> %>
+          <h2 id="modal-title">Put something on the canvas.</h2><p>
+            An idea, a task, an issue, or a pull request. Start anywhere.
+          </p><.form for={@create_form} id="create-form" phx-submit="create">
+            <.input
+              field={@create_form[:title]}
+              label="Title"
+              class="field-input"
+              placeholder="What are you thinking about?"
+              required
+            /><.input
+              field={@create_form[:kind]}
+              type="select"
+              label="Type"
+              options={[
+                {"Idea", "idea"},
+                {"Issue", "issue"},
+                {"Task", "task"},
+                {"Pull request", "pr"}
+              ]}
+              class="field-input"
+            /><button class="primary-button" type="submit">Add to canvas</button>
+          </.form>
+        <% "link" -> %>
+          <h2 id="modal-title">Add a reference.</h2><p>
+            Adding a link queues acquisition and embeddings through Axon, then reference analysis and capability discovery.
+          </p><.form for={@link_form} id="link-form" phx-submit="add_link">
+            <.input
+              field={@link_form[:url]}
+              type="url"
+              label="URL"
+              class="field-input"
+              placeholder="https://…"
+              required
+            /><.input
+              field={@link_form[:name]}
+              label="Label"
+              class="field-input"
+              placeholder="Optional name"
+            /><button class="primary-button" type="submit">Attach link</button>
+          </.form>
+        <% "upload" -> %>
+          <h2 id="modal-title">Bring your source material.</h2><p>
+            Images, documents, code, and notes. Up to 20 MB per file.
+          </p><.form
+            for={to_form(%{})}
+            id="upload-form"
+            phx-change="validate_upload"
+            phx-submit="upload"
+          >
+            <div class="upload-drop" phx-drop-target={@uploads.context.ref}>
+              <.icon name="hero-arrow-up-tray" class="size-8" /><strong>Drop files here</strong><.live_file_input upload={
+                @uploads.context
+              } />
+            </div><div :for={entry <- @uploads.context.entries} class="upload-entry">
+              <span>{entry.client_name} · {entry.progress}%</span><button
+                type="button"
+                phx-click="cancel_upload"
+                phx-value-ref={entry.ref}
+              >Remove</button><span
+                :for={err <- upload_errors(@uploads.context, entry)}
+                class="upload-error"
+              >{err}</span>
+            </div><p :for={err <- upload_errors(@uploads.context)} class="upload-error">{err}</p><button
+              class="primary-button"
+              type="submit"
+              disabled={@uploads.context.entries == []}
+            >Attach files</button>
+          </.form>
+        <% "connect" -> %>
+          <h2 id="modal-title">Make a connection.</h2><p>
+            Link this item to another part of your development process.
+          </p><.form for={@connect_form} id="connect-form" phx-submit="connect">
+            <.input
+              field={@connect_form[:target]}
+              type="select"
+              label="Connect to"
+              options={for n <- @board.nodes, n["id"] != @selected_id, do: {n["title"], n["id"]}}
+              class="field-input"
+            /><button class="primary-button" type="submit">Connect items</button>
+          </.form>
+        <% "delete" -> %>
+          <h2 id="modal-title">Remove this item?</h2><p>
+            The card and its graph connections will be removed. Uploaded files remain on disk.
+          </p><button class="danger-button" phx-click="delete">Remove item</button>
+        <% "integrations" -> %>
+          <h2 id="modal-title">A connected workspace.</h2><p>
+            The canvas brings your tools together. This spike makes each boundary visible.
+          </p><div class="integration-row">
+            <span>✳</span><div>
+              <strong>Codex app-server</strong><p>
+                Local stdio connection, launched per conversation. Authenticate with codex login.
+              </p>
+            </div><span class="integration-tag">Implemented</span>
+          </div><div
+            :for={
+              {name, copy} <- [
+                {"Jev / clef", "Decision models for data classification"},
+                {"Axon", "Crawling and document ingestion"},
+                {"Depot", "Relevant skills and MCP server discovery"},
+                {"Cortex", "Agent logs, metrics, and session correlation"},
+                {"Microsandbox", "Hardware-isolated agent workers"}
+              ]
+            }
+            class="integration-row"
+          >
+            <.icon name="hero-circle-stack" class="size-5" /><div>
+              <strong>{name}</strong><p>{copy}</p>
+            </div><span class="integration-tag pending">{if name == "Microsandbox" and
+                                                              Application.get_env(
+                                                                :canvas,
+                                                                :vm_runner
+                                                              ),
+                                                            do: "Runner configured",
+                                                            else: "Not connected"}</span>
+          </div><p class="field-help">
+            Axon ingestion and Depot discovery are configurable. Cortex telemetry is next. Microsandbox dispatch requires a provisioned runner; the canvas never substitutes host execution.
+          </p>
+        <% _ -> %>
+          <h2 id="modal-title">Your development, in one place.</h2><p>
+            Canvas is an early Phoenix LiveView spike for spatial project context, dedicated Codex conversations, and visible agent work.
+          </p><p>
+            One local owner and one board. Context and uploads live under data/. This preview has no multi-user authentication.
+          </p><a
+            class="secondary-button"
+            href="https://github.com/jmagar/canvas"
+            target="_blank"
+            rel="noopener noreferrer"
+          >View source</a>
+      <% end %>
+    </section>
+  </div>
+</Layouts.app>
