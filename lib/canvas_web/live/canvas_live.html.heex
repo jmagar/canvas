@@ -1,6 +1,6 @@
 <Layouts.app flash={@flash}>
-  <div class="workspace">
-    <aside class="rail">
+  <div class="workspace" data-sidebar-open={to_string(@sidebar_open)}>
+    <aside class="rail" id="workspace-navigation" hidden={!@sidebar_open}>
       <a class="brand" href="/" aria-label="Canvas home"><span class="brand-mark">c</span><span>canvas<span class="brand-dot">.</span></span></a>
       <div class="workspace-switch">
         <span class="workspace-avatar">W</span><div>
@@ -53,8 +53,22 @@
     <div class="main-workspace">
       <header class="topbar">
         <div class="breadcrumb">
+          <button
+            class="navigation-toggle"
+            phx-click="toggle_sidebar"
+            aria-label={if @sidebar_open, do: "Hide navigation", else: "Show navigation"}
+            aria-expanded={to_string(@sidebar_open)}
+            aria-controls="workspace-navigation"
+          ><.icon name="hero-bars-3" class="size-5" /></button>
+          <a href="/" class="topbar-brand">canvas<span>.</span></a>
           Workspace <.icon name="hero-chevron-right" class="size-3" /><strong>The canvas</strong>
         </div><div class="topbar-actions">
+          <button
+            class="navigation-toggle"
+            phx-click="modal"
+            phx-value-name="integrations"
+            aria-label="Connections"
+          ><.icon name="hero-circle-stack" class="size-5" /></button>
           <span class="local-badge"><span></span> Saved locally</span><button
             class="primary-button"
             id="new-item"

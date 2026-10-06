@@ -31,3 +31,10 @@
 .inspector h2{padding-top:20px;font-size:24px}
 .inspector-tabs{background:#fff}
 @media(max-width:680px){.inspector{inset:12px 12px auto auto;width:calc(100% - 24px);max-width:none;height:calc(100% - 24px);border-radius:15px}.inspector-heading{padding:12px 18px}.inspector h2{font-size:22px}}
+
+/* All core actions remain available with navigation closed. */
+.navigation-toggle{display:grid;place-items:center;width:34px;height:34px;border:1px solid #e6e5ef;background:#fff;border-radius:9px;color:#8c829f;flex-shrink:0}
+.navigation-toggle:hover{background:#f3f0f8;border-color:#d2c8e2}
+.topbar-brand{font-size:19px;font-weight:650;letter-spacing:-.8px;color:#333644;margin-right:8px}.topbar-brand span{color:#a18bc9}
+@media(max-width:900px){.workspace[data-sidebar-open="true"] .rail{position:absolute;inset:70px auto 0 0;width:230px;padding:24px 18px 0;z-index:12;display:flex;box-shadow:12px 0 40px #242b4230}.workspace[data-sidebar-open="true"] .rail .brand>span:last-child,.workspace[data-sidebar-open="true"] .rail .rail-section,.workspace[data-sidebar-open="true"] .rail .project-list,.workspace[data-sidebar-open="true"] .rail .rail-bottom,.workspace[data-sidebar-open="true"] .rail .nav-item .count{display:block}.workspace[data-sidebar-open="true"] .rail .workspace-switch{display:flex}.workspace[data-sidebar-open="true"] .rail .nav-item{font-size:12px;gap:10px;padding:10px 12px}.workspace[data-sidebar-open="true"] .rail .project-heading{display:flex}}
+@media(max-width:680px){.workspace[data-sidebar-open="true"] .rail{top:58px}.breadcrumb{gap:10px}.breadcrumb>.hero-chevron-right,.breadcrumb>strong{display:none}.topbar-brand{margin:0}.topbar-actions{gap:8px}.breadcrumb{font-size:0}}

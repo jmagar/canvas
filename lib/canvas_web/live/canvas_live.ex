@@ -10,6 +10,7 @@ defmodule CanvasWeb.CanvasLive do
       socket
       |> assign(
         page_title: "Canvas",
+        sidebar_open: false,
         selected_id: "welcome",
         tab: "context",
         modal: nil,
@@ -114,6 +115,9 @@ defmodule CanvasWeb.CanvasLive do
   def handle_info(:board_changed, socket), do: {:noreply, refresh(socket)}
 
   @impl true
+  def handle_event("toggle_sidebar", _, socket),
+    do: {:noreply, assign(socket, sidebar_open: !socket.assigns.sidebar_open)}
+
   def handle_event("select", %{"id" => id}, socket) do
     {:noreply, socket |> assign(selected_id: id, sessions: []) |> refresh()}
   end
