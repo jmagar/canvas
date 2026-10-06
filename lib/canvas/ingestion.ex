@@ -54,36 +54,61 @@ defmodule Canvas.Ingestion do
     node = Store.get(node_id)
     source = if node, do: Enum.find(node["attachments"], &(&1["id"] == source_id))
 
-    if source && source["kind"] != "reference" do
-      stage(key, "ingesting", "Preserving source and requesting Axon acquisition + embeddings")
-      axon = Application.get_env(:canvas, :axon_adapter, Canvas.Integrations.Axon)
+    if source && !Application.get_env(:canvas, :external_ingestion_enabled, false) do
+      stage(
+        key,
+        "local",
+        "Source preserved and previewed locally. Agentic reference synthesis does not require embeddings (ADR 0001)."
+      )
 
-      result =
-        if axon.configured?(), do: axon.ingest(source, node), else: {:error, :axon_not_configured}
-
-      case result do
-        {:ok, %{"receipt" => receipt, "text" => text}} ->
-          update_source(key, fn a -> Map.put(a, "axon", receipt) end)
-
-          if is_binary(text) and text != "" do
-            path = Path.join(Context.project_dir(node_id), source_id <> "-extracted.txt")
-            File.write!(path, String.slice(text, 0, 100_000))
-            File.chmod!(path, 0o600)
-            update_source(key, &Map.put(&1, "extracted_path", path))
-          end
-
-          stage(key, "embedded", "Axon terminal result verified")
-
-        {:error, why} ->
-          stage(key, "blocked", "Axon: #{inspect(why)}")
-      end
-
-      discover(node_id)
       scaffold(node_id)
 
-      case result do
-        {:ok, _} -> analyze(key)
-        _ -> :ok
+      if Application.get_env(:canvas, :vm_runner) do
+        analyze(key)
+      else
+        update_source(
+          key,
+          &Map.put(&1, "analysis", %{
+            "status" => "awaiting_runner",
+            "reason" =>
+              "Agentic ingestion needs an isolated Codex runner; local context is ready."
+          })
+        )
+      end
+    else
+      if source && source["kind"] != "reference" do
+        stage(key, "ingesting", "Preserving source and requesting Axon acquisition + embeddings")
+        axon = Application.get_env(:canvas, :axon_adapter, Canvas.Integrations.Axon)
+
+        result =
+          if axon.configured?(),
+            do: axon.ingest(source, node),
+            else: {:error, :axon_not_configured}
+
+        case result do
+          {:ok, %{"receipt" => receipt, "text" => text}} ->
+            update_source(key, fn a -> Map.put(a, "axon", receipt) end)
+
+            if is_binary(text) and text != "" do
+              path = Path.join(Context.project_dir(node_id), source_id <> "-extracted.txt")
+              File.write!(path, String.slice(text, 0, 100_000))
+              File.chmod!(path, 0o600)
+              update_source(key, &Map.put(&1, "extracted_path", path))
+            end
+
+            stage(key, "embedded", "Axon terminal result verified")
+
+          {:error, why} ->
+            stage(key, "blocked", "Axon: #{inspect(why)}")
+        end
+
+        discover(node_id)
+        scaffold(node_id)
+
+        case result do
+          {:ok, _} -> analyze(key)
+          _ -> :ok
+        end
       end
     end
   end
@@ -130,7 +155,7 @@ defmodule Canvas.Ingestion do
       stage(
         key,
         "awaiting_agent",
-        "Embedding complete. Configure CANVAS_VM_RUNNER for the reference analyst"
+        "Local context ready. Configure CANVAS_VM_RUNNER for the reference analyst"
       )
     end
   end

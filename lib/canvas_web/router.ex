@@ -18,6 +18,7 @@ defmodule CanvasWeb.Router do
     pipe_through :browser
 
     live "/", CanvasLive, :index
+    get "/previews/:node_id/:id", AttachmentController, :preview
     get "/attachments/:node_id/:id", AttachmentController, :show
   end
 

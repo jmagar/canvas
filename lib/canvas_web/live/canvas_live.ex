@@ -45,13 +45,16 @@ defmodule CanvasWeb.CanvasLive do
         %{
           "id" => "source-" <> a["id"],
           "kind" => "reference",
+          "source_kind" => a["kind"],
+          "preview_text" => Canvas.Context.preview(a),
+          "preview_url" => if(a["kind"] == "image", do: "/previews/#{n["id"]}/#{a["id"]}"),
           "title" => a["name"],
           "description" =>
             get_in(a, ["reference", "summary"]) || a["url"] || "Attached source material",
           "parent_id" => n["id"],
           "status" => get_in(a, ["ingestion", "status"]) || "queued",
-          "x" => a["x"] || n["x"] - 330,
-          "y" => a["y"] || n["y"] + i * 220,
+          "x" => a["x"] || n["x"] + 24,
+          "y" => a["y"] || n["y"] + 150 + i * 138,
           "attachments" => [],
           "messages" => []
         }

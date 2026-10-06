@@ -22,7 +22,7 @@
 
 /* Project window floats above the full-width canvas. */
 .canvas-and-inspector{position:relative}
-.inspector{position:absolute;inset:24px 24px auto auto;width:420px;max-width:calc(100% - 32px);height:min(720px,calc(100% - 48px));z-index:8;border:1px solid #d9dce8;border-radius:18px;overflow:hidden;background:#fffffffa;box-shadow:0 24px 70px #25304726,0 4px 14px #25304710;backdrop-filter:blur(16px)}
+.inspector{position:absolute;inset:24px 24px auto auto;width:480px;max-width:calc(100% - 32px);height:min(620px,calc(100% - 96px));z-index:8;border:1px solid #d9dce8;border-radius:18px;overflow:hidden;background:#fffffffa;box-shadow:0 24px 70px #25304726,0 4px 14px #25304710;backdrop-filter:blur(16px)}
 .inspector-heading{padding:17px 22px 13px;background:linear-gradient(120deg,#f8f6fc,#f3f5fa);border-bottom:1px solid #e8e7ef;cursor:grab;touch-action:none;user-select:none}
 .inspector-heading:active{cursor:grabbing}
 .inspector-heading .type-label:after{content:"· · ·";margin-left:12px;letter-spacing:2px;color:#b8b1c6}
@@ -38,3 +38,20 @@
 .topbar-brand{font-size:19px;font-weight:650;letter-spacing:-.8px;color:#333644;margin-right:8px}.topbar-brand span{color:#a18bc9}
 @media(max-width:900px){.workspace[data-sidebar-open="true"] .rail{position:absolute;inset:70px auto 0 0;width:230px;padding:24px 18px 0;z-index:12;display:flex;box-shadow:12px 0 40px #242b4230}.workspace[data-sidebar-open="true"] .rail .brand>span:last-child,.workspace[data-sidebar-open="true"] .rail .rail-section,.workspace[data-sidebar-open="true"] .rail .project-list,.workspace[data-sidebar-open="true"] .rail .rail-bottom,.workspace[data-sidebar-open="true"] .rail .nav-item .count{display:block}.workspace[data-sidebar-open="true"] .rail .workspace-switch{display:flex}.workspace[data-sidebar-open="true"] .rail .nav-item{font-size:12px;gap:10px;padding:10px 12px}.workspace[data-sidebar-open="true"] .rail .project-heading{display:flex}}
 @media(max-width:680px){.workspace[data-sidebar-open="true"] .rail{top:58px}.breadcrumb{gap:10px}.breadcrumb>.hero-chevron-right,.breadcrumb>strong{display:none}.topbar-brand{margin:0}.topbar-actions{gap:8px}.breadcrumb{font-size:0}}
+
+/* Islands group context; agents travel on distinct activity trails. */
+.project-island{position:absolute;pointer-events:none;background:radial-gradient(ellipse at top left,#f3eefbcc,#edf5f4aa);border:1px solid #cec6dd;border-radius:48px 38px 54px 34px;box-shadow:0 10px 40px #65577d08}
+.island-caption{position:absolute;top:13px;left:28px;font-size:8px;letter-spacing:2px;color:#a397b3}
+.graph-node{min-height:0;border:0;background:transparent;box-shadow:none;border-radius:20px;padding:16px 20px 12px;width:280px;overflow:visible}
+.graph-node:hover{background:#ffffff70;border:0;box-shadow:none}.graph-node.selected{background:#ffffffbb;outline:2px solid #b7a4d0;box-shadow:0 0 0 5px #ffffff55}
+.graph-node h3{font-size:18px;line-height:1.25;margin-top:9px}.graph-node .node-description{-webkit-line-clamp:2;margin-top:8px;font-size:11px}.graph-node .node-footer{margin-top:12px;border:0;padding:0;font-size:9px}
+.graph-node.reference{width:250px;height:50px;padding:8px 12px;border:1px solid #ddd7e8;background:#ffffffbc;border-radius:14px;display:flex;align-items:center;gap:9px;overflow:hidden}
+.graph-node.reference .node-header{display:contents}.graph-node.reference .node-kind{display:none}.graph-node.reference .node-state{position:absolute;right:10px;bottom:5px;font-size:7px}.graph-node.reference h3{font-size:10px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}.graph-node.reference .node-symbol{width:24px;height:24px;flex-shrink:0}
+.graph-node.agent{width:280px;background:#fff8fd;border:1px solid #d9bdcf;border-radius:24px;box-shadow:0 8px 26px #90627f13}.graph-node.agent h3{font-size:14px}.graph-node.agent .node-footer{display:none}.agent-latest{font-size:9px;line-height:1.5;color:#a47d97;margin-top:12px;padding-top:9px;border-top:1px solid #ecdce7}.graph-node.agent .node-running{border-radius:24px}
+.graph-edges .agent-trail{stroke:#b486a8;stroke-width:2.5;stroke-dasharray:6 7}.graph-edges .agent-trail.running,.graph-edges .agent-trail.starting{animation:trail-flow 1.2s linear infinite}.graph-edges .agent-trail.completed{stroke:#81a896;stroke-dasharray:none}.graph-edges .agent-trail.blocked,.graph-edges .agent-trail.failed{stroke:#c3a275}.graph-edges .trail-step{fill:#fff;stroke:#b486a8;stroke-width:2}.graph-edges .trail-step.completed{fill:#b8d1c2;stroke:#81a896}
+@keyframes trail-flow{to{stroke-dashoffset:-26}}@media(prefers-reduced-motion:reduce){.graph-edges .agent-trail{animation:none!important}}
+
+.graph-node.reference{background:transparent;border:0;gap:10px}.graph-node.reference .node-symbol{width:12px;height:12px;background:#b7a3cd;border:3px solid #f6f1fc;border-radius:50%;font-size:0;box-shadow:0 0 0 1px #c8b8db}.graph-node.reference h3{font-size:11px;color:#817491}.graph-node.reference .node-state{right:auto;left:35px;bottom:0;background:transparent;padding:0}
+.graph-node.reference.document-preview{height:126px;display:block;background:#ffffffc9;border:1px solid #e1dbe9;border-radius:16px;padding:10px 13px;overflow:hidden;box-shadow:0 5px 15px #78648708}.document-preview .node-symbol{display:inline-block;margin-right:8px}.graph-node.reference.document-preview h3{display:inline;font-size:10px;max-width:190px}.graph-node.reference.document-preview .node-state{left:auto;right:10px;bottom:7px;font-size:7px}.source-preview-image{display:block;width:100%;height:75px;object-fit:cover;border-radius:7px;margin-top:8px}.source-preview-text{font-family:inherit;font-size:9px;line-height:1.6;color:#97909f;white-space:pre-wrap;overflow:hidden;height:72px;margin:8px 0 0;padding:7px 9px;background:linear-gradient(#faf8fd,#f6f7fa);border-radius:7px}
+
+html,body{height:100%;overflow:hidden}.workspace,.spatial-canvas{overflow:clip}

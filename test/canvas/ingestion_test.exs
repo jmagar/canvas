@@ -15,8 +15,8 @@ defmodule Canvas.IngestionTest do
 
     await_scaffold(node["id"])
     source = hd(Store.get(node["id"])["attachments"])
-    assert source["ingestion"]["status"] == "blocked"
-    assert source["ingestion"]["reason"] =~ "axon_not_configured"
+    assert source["ingestion"]["status"] == "local"
+    assert source["ingestion"]["reason"] =~ "does not require embeddings"
     path = Store.get(node["id"])["reference_document"]["path"]
     text = File.read!(path)
     assert text =~ "https://example.com/spec"

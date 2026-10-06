@@ -12,14 +12,18 @@ PORT=4077 mise exec -- mix phx.server
 
 Open http://localhost:4077. Install and authenticate the official Codex CLI first (`codex login`). The app uses `codex app-server --stdio`; it does not use the desktop app's private internal APIs.
 
+## Current direction
+
+[ADR 0001](docs/adr/0001-foundation-before-axon-and-cortex.md) defers Axon and Cortex until the canvas foundation is validated. Ingestion stays agentic: local preservation and previews feed a Codex reference analyst without an embedding prerequisite. Existing Axon/Cortex integration is deferred; automatic analysis requires an isolated runner.
+
 ## What works
 
 - Drag, pan, zoom, search, and filter canvas cards; persist positions and relationships.
 - Describe each project and attach a repository, links, files, images, documents, or an explicitly selected Codex session.
 - Chat with a dedicated, persisted Codex thread. Stream assistant text and activity; steer or interrupt a running turn. Normal chats use read-only filesystem access and never approve server requests.
 - Dispatch linked agent cards through a configured VM runner. Missing VM configuration blocks dispatch visibly.
-- Automatically queue added sources for Axon ingestion, discover relevant Depot capabilities, and create a living `REFERENCE.md` catalog.
-- After embedding, dispatch a context analyst with a structured output schema. Save summaries, relevance, reference guidance, limitations, and relationship suggestions with thread provenance. Accept suggestions to connect sources on the graph.
+- Automatically preserve added sources locally and create a `REFERENCE.md` catalog scaffold. External acquisition and telemetry are deferred.
+- With an isolated runner configured, dispatch a context analyst directly with a structured output schema. Save summaries, relevance, reference guidance, limitations, and relationship suggestions with thread provenance. Accept suggestions to connect sources on the graph.
 - Classify context with Jev or CLEF, retaining model identity, confidence, answer distributions, taxonomy version, and review flags.
 
 ## Configure integrations
@@ -46,9 +50,9 @@ Optional `CANVAS_DECISION_MODEL` overrides the decision model. Classification do
 
 ### Ingestion flow
 
-`attach → Axon acquire/embed → Depot discovery → reference scaffold → VM context analyst → validated reference → classification → suggested graph links`
+`attach → preserve locally → safe preview/context manifest → isolated Codex analyst → validated reference notes → suggested graph links`
 
-Unavailable adapters produce explicit blocked/awaiting states. Queued work is held in memory; after restart, use **Retry pipeline** for unfinished sources. Stored sources and reference documents persist. An embedding receipt alone does not prove extracted text was supplied: inline Axon text is included when returned; artifact retrieval and OCR/document extraction are future work. Analysts are instructed to report unavailable content rather than invent it. Related-source outputs must name existing source IDs, and graph links require acceptance.
+Embeddings are not required. Without an isolated runner, sources and previews remain usable while analysis is visibly awaiting the runner. Analysts must report unavailable content rather than invent it; relationship suggestions must name existing sources. Axon acquisition/embedding code remains experimental and disabled in automatic processing under ADR 0001. Cortex is deferred. Queued work is held in memory; after restart, use **Refresh catalog** for unfinished sources.
 
 ## Spike boundaries
 

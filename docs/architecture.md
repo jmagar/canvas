@@ -19,6 +19,10 @@ flowchart LR
   Graph --> UI
 ```
 
+## Current foundation
+
+ADR 0001 supersedes the external-service flow above for default operation. Sources are preserved and previewed locally, then supplied directly to an isolated Codex analyst. Embedding and Cortex integration are deferred; source provenance and validated reference relationships remain in scope.
+
 ## Boundaries
 
 - `Canvas.Store`: serialized mutations, atomic file replacement, board persistence and PubSub.

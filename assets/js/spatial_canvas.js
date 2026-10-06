@@ -31,6 +31,8 @@ export const SpatialCanvas = {
         d.card.style.top = `${d.y + dy / this.view.scale}px`
         const n = this.graph.nodes.find(n => n.id === d.id)
         if (n) {n.x = d.x + dx / this.view.scale; n.y = d.y + dy / this.view.scale}
+        const island = this.plane.querySelector(`[data-project="${d.id}"]`)
+        if (island) {island.style.left = `${n.x - 24}px`; island.style.top = `${n.y - 30}px`}
         this.drawEdges()
       } else {
         this.view.x = d.x + dx; this.view.y = d.y + dy; this.transform()
@@ -92,19 +94,42 @@ export const SpatialCanvas = {
     this.svg = document.createElementNS(svgNS, 'svg')
     this.svg.classList.add('graph-edges')
     this.svg.setAttribute('viewBox', '-6000 -6000 12000 12000')
+    for (const project of this.graph.nodes.filter(n => !['agent', 'reference'].includes(n.kind))) {
+      const sources = this.graph.nodes.filter(n => n.kind === 'reference' && n.parent_id === project.id)
+      const island = make('div', 'project-island')
+      island.dataset.project = project.id
+      island.style.left = `${project.x - 24}px`; island.style.top = `${project.y - 30}px`
+      island.style.width = `${Math.max(328, ...sources.map(n => n.x - project.x + 290))}px`
+      island.style.height = `${Math.max(220, ...sources.map(n => n.y - project.y + 160))}px`
+      island.append(make('span', 'island-caption', 'PROJECT ISLAND'))
+      this.plane.append(island)
+    }
     this.plane.append(this.svg)
     for (const node of this.graph.nodes) {
       const card = make('button', `graph-node ${node.kind}${node.id === this.graph.selected ? ' selected' : ''}`)
-      card.id = `node-${node.id}`; card.dataset.id = node.id; if(node.parent_id) card.dataset.parent = node.parent_id
+      card.id = `node-${node.id}`; card.dataset.id = node.id; if(node.kind === "reference") card.dataset.parent = node.parent_id
       card.dataset.x = node.x; card.dataset.y = node.y
       card.style.left = `${node.x}px`; card.style.top = `${node.y}px`
       card.setAttribute('aria-label', `${node.kind}: ${node.title}. ${node.status}. Use arrow keys to move.`)
       const header = make('div', 'node-header')
       header.append(make('span', 'node-symbol', symbols[node.kind] || '◇'), make('span', 'node-kind', node.kind === 'pr' ? 'Pull request' : node.kind.charAt(0).toUpperCase() + node.kind.slice(1)), make('span', `node-state ${node.status}`, node.status))
-      card.append(header, make('h3', '', node.title), make('p', 'node-description', node.description || 'An idea waiting to take shape. Add context to get started.'))
+      card.append(header, make('h3', '', node.title))
+      if (node.kind !== 'reference') card.append(make('p', 'node-description', node.description || 'An idea waiting to take shape.'))
       const footer = make('div', 'node-footer')
       footer.append(make('span', '', `${node.attachments.length} sources`), make('span', '', `${node.messages.length} messages`), make('span', 'node-open', '↗'))
-      card.append(footer)
+      if (node.kind !== 'reference') card.append(footer)
+      if (node.kind === 'reference' && (node.preview_url || node.source_kind === 'file' || node.source_kind === 'session')) {
+        card.classList.add('document-preview')
+        if (node.preview_url) {
+          const image = make('img', 'source-preview-image')
+          image.src = node.preview_url; image.alt = node.title; image.loading = 'lazy'
+          card.append(image)
+        } else card.append(make('pre', 'source-preview-text', node.preview_text || node.description || 'Document content awaiting extraction'))
+      }
+      if (node.kind === 'agent') {
+        const latest = node.activity?.at(-1)?.text
+        card.append(make('div', 'agent-latest', latest || (node.status === 'blocked' ? 'Waiting for isolated runner' : 'Waiting for activity')))
+      }
       if (node.status === 'running' || node.status === 'starting') card.append(make('div', 'node-running'))
       this.plane.append(card)
     }
@@ -117,17 +142,28 @@ export const SpatialCanvas = {
     for (const edge of this.graph.edges) {
       const from = this.graph.nodes.find(n => n.id === edge.from), to = this.graph.nodes.find(n => n.id === edge.to)
       if (!from || !to) continue
-      const x1 = from.x + 280, y1 = from.y + 90, x2 = to.x, y2 = to.y + 90
+      const trail = to.kind === 'agent'
+      const x1 = from.x + (from.kind === 'reference' ? 250 : 280), y1 = from.y + (from.kind === 'reference' ? 24 : 60), x2 = to.x, y2 = to.y + 60
       const curve = Math.max(60, Math.abs(x2 - x1) / 2)
       const path = document.createElementNS(svgNS, 'path')
       path.setAttribute('d', `M ${x1} ${y1} C ${x1 + curve} ${y1}, ${x2 - curve} ${y2}, ${x2} ${y2}`)
+      if (trail) path.classList.add('agent-trail', to.status)
       this.svg.append(path)
+      if (trail) {
+        for (let i = 0; i < 3; i++) {
+          const point = path.getPointAtLength(path.getTotalLength() * (i + 1) / 4)
+          const step = document.createElementNS(svgNS, 'circle')
+          step.setAttribute('cx', point.x); step.setAttribute('cy', point.y); step.setAttribute('r', 5)
+          step.classList.add('trail-step', to.status)
+          this.svg.append(step)
+        }
+      }
       const circle = document.createElementNS(svgNS, 'circle')
       circle.setAttribute('cx', x2); circle.setAttribute('cy', y2); circle.setAttribute('r', 4)
       this.svg.append(circle)
       const label = document.createElementNS(svgNS, 'text')
       label.setAttribute('x', (x1 + x2) / 2); label.setAttribute('y', (y1 + y2) / 2 - 12)
-      label.textContent = edge.label; this.svg.append(label)
+      label.textContent = trail ? `Agent trail · ${to.status}` : edge.label; this.svg.append(label)
     }
   },
   transform() {
@@ -146,8 +182,8 @@ export const SpatialCanvas = {
     const nodes = this.graph.nodes
     if (!nodes.length) return
     const minX = Math.min(...nodes.map(n => n.x)), minY = Math.min(...nodes.map(n => n.y))
-    const width = Math.max(...nodes.map(n => n.x + 280)) - minX
-    const height = Math.max(...nodes.map(n => n.y + 200)) - minY
+    const width = Math.max(...nodes.map(n => n.x + 328)) - minX
+    const height = Math.max(...nodes.map(n => n.y + (n.kind === "reference" ? 62 : 220))) - minY
     const scale = Math.min(1, Math.max(0.25, Math.min((this.el.clientWidth - 100) / width, (this.el.clientHeight - 100) / height)))
     this.view = {scale, x: (this.el.clientWidth - width * scale) / 2 - minX * scale, y: (this.el.clientHeight - height * scale) / 2 - minY * scale}
     this.transform()

@@ -106,6 +106,7 @@
               for={to_form(%{"q" => @query})}
               id="search-form"
               phx-change="search"
+              phx-submit="search"
               class="search-form"
             >
               <.icon name="hero-magnifying-glass" class="size-4" /><.input
@@ -252,7 +253,7 @@
               phx-click="classify"
             ><.icon name="hero-tag" class="size-4" />Classify with Jev / clef</button>
             <div :if={@selected["attachments"] != []} class="pipeline-heading">
-              <span>Ingest · Embed · Classify · Analyze · Connect</span><button phx-click="retry_ingestion">Retry pipeline</button>
+              <span>Preserve · Preview · Analyze · Connect</span><button phx-click="retry_ingestion">Refresh catalog</button>
             </div>
             <div class="sources-list">
               <div
@@ -373,7 +374,7 @@
           </div>
           <div :if={@tab == "references"} class="inspector-body references-body">
             <h3>Your context, explained.</h3><p class="field-help">
-              A living source catalog. The VM analyst adds summaries, relevance, and evidence-backed relationships after ingestion.
+              A local source catalog. A Codex analyst can write reference notes and suggest connections from explicit context, without embeddings.
             </p>
             <div :for={a <- @selected["attachments"]} class="reference-entry">
               <h4>{a["name"]}</h4><p class="reference-location">{a["url"] || a["path"]}</p>
@@ -393,7 +394,10 @@
                   >Connect sources</button>
                 </div>
               <% else %>
-                <p class="field-help">Analysis pending. {get_in(a, ["ingestion", "reason"])}</p>
+                <p class="field-help">
+                  Analysis pending. {get_in(a, ["analysis", "reason"]) ||
+                    get_in(a, ["ingestion", "reason"])}
+                </p>
               <% end %>
             </div>
             <details :if={@reference_text != ""} class="reference-document">
@@ -481,7 +485,7 @@
           </.form>
         <% "link" -> %>
           <h2 id="modal-title">Add a reference.</h2><p>
-            Adding a link queues acquisition and embeddings through Axon, then reference analysis and capability discovery.
+            Links are saved as local context. Crawling and embeddings are deferred until the canvas foundation is ready.
           </p><.form for={@link_form} id="link-form" phx-submit="add_link">
             <.input
               field={@link_form[:url]}
@@ -572,7 +576,7 @@
                                                             do: "Runner configured",
                                                             else: "Not connected"}</span>
           </div><p class="field-help">
-            Axon ingestion and Depot discovery are configurable. Cortex telemetry is next. Microsandbox dispatch requires a provisioned runner; the canvas never substitutes host execution.
+            Axon and Cortex are deferred under ADR 0001. Current context stays local. Microsandbox dispatch requires a provisioned runner.
           </p>
         <% _ -> %>
           <h2 id="modal-title">Your development, in one place.</h2><p>

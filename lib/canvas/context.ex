@@ -61,6 +61,25 @@ defmodule Canvas.Context do
     }
   end
 
+  def preview(attachment) do
+    path = attachment["extracted_path"] || attachment["path"]
+
+    if path && attachment["kind"] != "image" do
+      case File.open(path, [:read, :binary]) do
+        {:ok, file} ->
+          bytes = IO.binread(file, 2048)
+          File.close(file)
+
+          if is_binary(bytes) && String.valid?(bytes) && !String.contains?(bytes, <<0>>),
+            do: String.slice(bytes, 0, 360),
+            else: nil
+
+        _ ->
+          nil
+      end
+    end
+  end
+
   defp reference(a) when is_map_key(a, "extracted_path"),
     do: reference(Map.put(Map.delete(a, "extracted_path"), "path", a["extracted_path"]))
 
