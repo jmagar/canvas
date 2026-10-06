@@ -130,8 +130,19 @@
             )} connections</span><span>Drag to arrange <span class="footer-divider">/</span>Scroll to zoom</span>
           </footer>
         </section>
-        <aside :if={@selected} class="inspector" id="inspector">
-          <div class="inspector-heading">
+        <aside
+          :if={@selected}
+          class="inspector"
+          id="inspector"
+          phx-hook="FloatingInspector"
+          aria-label="Project window"
+        >
+          <div
+            class="inspector-heading"
+            data-window-handle
+            tabindex="0"
+            aria-label="Move project window. Use arrow keys to reposition."
+          >
             <span class={"type-label #{@selected["kind"]}"}><.icon
               name={kind_icon(@selected["kind"])}
               class="size-4"
